@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 /**
  * Basic color picker
  * @param initialColor given start color to change
+ * @param iconsColor tint color for color and alpha rectangle icons
  * @param shadeBoxSize size which will be applied to color box, color rect height and alpha rect width
  * @param colorRectWidth size which will be applied to color rect width and alpha rect height
  * @param boxCursorSize size for color picker box circle cursor
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ColorPicker(
     initialColor: Color = Color.Red,
+    iconsColor: Color = Color.Black,
     shadeBoxSize: Int = 255,
     colorRectWidth: Int = 20,
     boxCursorSize: Int = 20,
@@ -119,6 +121,7 @@ fun ColorPicker(
                     Icon(
                         painter = painterResource("arrow_right.png"),
                         contentDescription = null,
+                        tint = iconsColor,
                         modifier = Modifier
                             .offset { IntOffset(0, colorPosY.toInt() - 5) }
                             .size(10.dp)
@@ -150,6 +153,7 @@ fun ColorPicker(
                     Icon(
                         painter = painterResource("arrow_left.png"),
                         contentDescription = null,
+                        tint = iconsColor,
                         modifier = Modifier
                             .offset { IntOffset(0, colorPosY.toInt() - 5) }
                             .size(10.dp)
@@ -167,6 +171,7 @@ fun ColorPicker(
             Icon(
                 painter = painterResource("arrow_down.png"),
                 contentDescription = null,
+                tint = iconsColor,
                 modifier = Modifier
                     .offset { IntOffset(alphaPosX.toInt() - 5, 0) }
                     .size(10.dp)
