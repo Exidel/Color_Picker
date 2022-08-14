@@ -50,14 +50,14 @@ fun ColorPicker(
     val correctCursorSize = if (boxCursorSize > 0) boxCursorSize else 20
     val correctArrangement = if (arrangement >= 0) arrangement else 20
 
-    var color by remember { mutableStateOf(getShadeBoxBackground(initialColor)) }
-    var colorShade by remember { mutableStateOf(color) }
-    var resultColor by remember { mutableStateOf(colorShade) }
-
     var x by remember { mutableStateOf(getShadeCursorOffset(initialColor, correctShadeBoxSize).x) }  // Shade box cursor position X
     var y by remember { mutableStateOf(getShadeCursorOffset(initialColor, correctShadeBoxSize).y) }  // Shade box cursor position Y
     var colorPosY by remember { mutableStateOf(getColorCursorPosition(initialColor, correctShadeBoxSize)) }  // Color rectangle cursor position Y
     var alphaPosX by remember { mutableStateOf(getAlphaCursorPosition(initialColor, correctShadeBoxSize)) }  // Alpha rectangle cursor position X
+
+    var color by remember { mutableStateOf(getShadeBoxBackground(initialColor)) }
+    var colorShade by remember { mutableStateOf(getColorShade(color, Offset(x, y), correctShadeBoxSize)) }
+    var resultColor by remember { mutableStateOf(colorShade) }
 
     LaunchedEffect(initialColor) {
         color = getShadeBoxBackground(initialColor)
