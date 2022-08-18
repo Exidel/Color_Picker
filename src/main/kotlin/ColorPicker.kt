@@ -168,8 +168,6 @@ fun ColorPicker(
 
         }
 
-    }
-
 // Horizontal alpha rectangle
         Column {
 
@@ -208,8 +206,7 @@ fun ColorPicker(
 
         }
 
-
-
+    }
 
 
 }
