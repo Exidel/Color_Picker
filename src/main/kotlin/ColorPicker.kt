@@ -65,12 +65,18 @@ fun ColorPicker(
         y = getShadeCursorOffset(initialColor, correctShadeBoxSize).y
         colorPosY = getColorCursorPosition(initialColor, correctShadeBoxSize)
         alphaPosX = getAlphaCursorPosition(initialColor, correctShadeBoxSize)
+        colorShade = getColorShade(color, Offset(x, y), correctShadeBoxSize)
+        resultColor = colorShade
     }  // Call if for some reason you want to change initial color right in changing process
+
     LaunchedEffect(color) { colorShade = getColorShade(color, Offset(x, y), correctShadeBoxSize) }  // Call on RAW color change to change shade color
+
     LaunchedEffect(colorShade) {
         resultColor = colorShade.copy(alpha = getAlpha(Offset(alphaPosX, 0f), correctShadeBoxSize))
         onColorChange(resultColor)  // return complete color
     }  // Call on color shade change to change result color
+
+    LaunchedEffect(alphaPosX) { onColorChange(resultColor) }
 
 
 
