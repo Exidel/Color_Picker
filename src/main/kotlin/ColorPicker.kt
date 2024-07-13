@@ -2,11 +2,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.runtime.*
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -14,10 +14,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -33,7 +32,6 @@ import androidx.compose.ui.unit.dp
  * @param arrangement space between box and color and alpha rectangles
  * @param onColorChange return selected color
  * */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ColorPicker(
     initialColor: Color = Color.Red,
@@ -49,30 +47,33 @@ fun ColorPicker(
     val correctColorRectWidth = if (colorRectWidth > 0) colorRectWidth else 20
     val correctCursorSize = if (boxCursorSize > 0) boxCursorSize else 20
     val correctArrangement = if (arrangement >= 0) arrangement else 20
+    val density = LocalDensity.current.density
+    val shadeBoxSizeWithDensity = correctShadeBoxSize * density
+    
 
-    var x by remember { mutableStateOf(getShadeCursorOffset(initialColor, correctShadeBoxSize).x) }  // Shade box cursor position X
-    var y by remember { mutableStateOf(getShadeCursorOffset(initialColor, correctShadeBoxSize).y) }  // Shade box cursor position Y
-    var colorPosY by remember { mutableStateOf(getColorCursorPosition(initialColor, correctShadeBoxSize)) }  // Color rectangle cursor position Y
-    var alphaPosX by remember { mutableStateOf(getAlphaCursorPosition(initialColor, correctShadeBoxSize)) }  // Alpha rectangle cursor position X
+    var x by remember { mutableStateOf(getShadeCursorOffset(initialColor, shadeBoxSizeWithDensity.toInt()).x) }  // Shade box cursor position X
+    var y by remember { mutableStateOf(getShadeCursorOffset(initialColor, shadeBoxSizeWithDensity.toInt()).y) }  // Shade box cursor position Y
+    var colorPosY by remember { mutableStateOf(getColorCursorPosition(initialColor, shadeBoxSizeWithDensity.toInt())) }  // Color rectangle cursor position Y
+    var alphaPosX by remember { mutableStateOf(getAlphaCursorPosition(initialColor, shadeBoxSizeWithDensity.toInt())) }  // Alpha rectangle cursor position X
 
     var color by remember { mutableStateOf(getShadeBoxBackground(initialColor)) }
-    var colorShade by remember { mutableStateOf(getColorShade(color, Offset(x, y), correctShadeBoxSize)) }
+    var colorShade by remember { mutableStateOf(getColorShade(color, Offset(x, y), shadeBoxSizeWithDensity.toInt())) }
     var resultColor by remember { mutableStateOf(colorShade) }
 
     LaunchedEffect(initialColor) {
         color = getShadeBoxBackground(initialColor)
-        x = getShadeCursorOffset(initialColor, correctShadeBoxSize).x
-        y = getShadeCursorOffset(initialColor, correctShadeBoxSize).y
-        colorPosY = getColorCursorPosition(initialColor, correctShadeBoxSize)
-        alphaPosX = getAlphaCursorPosition(initialColor, correctShadeBoxSize)
-        colorShade = getColorShade(color, Offset(x, y), correctShadeBoxSize)
+        x = getShadeCursorOffset(initialColor, shadeBoxSizeWithDensity.toInt()).x
+        y = getShadeCursorOffset(initialColor, shadeBoxSizeWithDensity.toInt()).y
+        colorPosY = getColorCursorPosition(initialColor, shadeBoxSizeWithDensity.toInt())
+        alphaPosX = getAlphaCursorPosition(initialColor, shadeBoxSizeWithDensity.toInt())
+        colorShade = getColorShade(color, Offset(x, y), shadeBoxSizeWithDensity.toInt())
         resultColor = colorShade
     }  // Call if for some reason you want to change initial color right in changing process
 
-    LaunchedEffect(color) { colorShade = getColorShade(color, Offset(x, y), correctShadeBoxSize) }  // Call on RAW color change to change shade color
+    LaunchedEffect(color) { colorShade = getColorShade(color, Offset(x, y), shadeBoxSizeWithDensity.toInt()) }  // Call on RAW color change to change shade color
 
     LaunchedEffect(colorShade) {
-        resultColor = colorShade.copy(alpha = getAlpha(Offset(alphaPosX, 0f), correctShadeBoxSize))
+        resultColor = colorShade.copy(alpha = getAlpha(Offset(alphaPosX, 0f), shadeBoxSizeWithDensity.toInt()))
         onColorChange(resultColor)  // return complete color
     }  // Call on color shade change to change result color
 
@@ -96,18 +97,21 @@ fun ColorPicker(
                     Modifier
                         .size(correctShadeBoxSize.dp)
                         .background(brush = Brush.verticalGradient(listOf(Color.Transparent, Color.Black)))
-                        .onPointerEvent(PointerEventType.Press) {
-                            val position = it.changes.first().position
-                            colorShade = getColorShade(color, position, correctShadeBoxSize)
-                            x = position.x
-                            y = position.y
+                        .pointerInput(Unit) {
+                            detectTapGestures {
+                                val position = it
+                                colorShade = getColorShade(color, position, shadeBoxSizeWithDensity.toInt())
+                                x = position.x
+                                y = position.y
+                            }
                         }
                         .pointerInput(Unit) {
                             detectDragGestures { change, _ ->
-                                x = (change.position.x).coerceIn(0f..correctShadeBoxSize.toFloat())
-                                y = (change.position.y).coerceIn(0f..correctShadeBoxSize.toFloat())
-                                colorShade = getColorShade(color, Offset(x, y), correctShadeBoxSize)
+                                x = (change.position.x).coerceIn(0f..shadeBoxSizeWithDensity)
+                                y = (change.position.y).coerceIn(0f..shadeBoxSizeWithDensity)
+                                colorShade = getColorShade(color, Offset(x, y), shadeBoxSizeWithDensity.toInt())
                             }
+
                         }
                 )
 
@@ -117,8 +121,8 @@ fun ColorPicker(
                     Modifier
                         .offset {
                             IntOffset(
-                                x = x.toInt() - getCenter(correctCursorSize).x.toInt(),
-                                y = y.toInt() - getCenter(correctCursorSize).y.toInt()
+                                x = x.toInt() - getCenter(correctCursorSize, density).x.toInt(),
+                                y = y.toInt() - getCenter(correctCursorSize, density).y.toInt()
                             )
                         }
                         .size(correctCursorSize.dp)
@@ -134,7 +138,7 @@ fun ColorPicker(
                     contentDescription = null,
                     tint = iconsColor,
                     modifier = Modifier
-                        .offset { IntOffset(0, colorPosY.toInt() - 5) }
+                        .offset { IntOffset(0, colorPosY.toInt() - 5.dp.roundToPx()) }
                         .size(10.dp)
                 )
 
@@ -147,15 +151,19 @@ fun ColorPicker(
                             Color.Green, Color(1f, 1f, 0f),
                             Color.Red
                         ), tileMode = TileMode.Repeated ) )
-                        .onPointerEvent(PointerEventType.Press) {
-                            val position = it.changes.first().position
-                            colorPosY = position.y
-                            color = getColor(color, position, correctShadeBoxSize)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    val position = it
+                                    colorPosY = position.y
+                                    color = getColor(color, position, shadeBoxSizeWithDensity.toInt())
+                                }
+                            )
                         }
                         .pointerInput(Unit) {
                             detectDragGestures { change, _ ->
-                                colorPosY = (change.position.y).coerceIn(0f..correctShadeBoxSize.toFloat())
-                                color = getColor(color, change.position, correctShadeBoxSize)
+                                colorPosY = (change.position.y).coerceIn(0f..shadeBoxSizeWithDensity)
+                                color = getColor(color, change.position, shadeBoxSizeWithDensity.toInt())
                             }
                         }
 
@@ -166,7 +174,7 @@ fun ColorPicker(
                     contentDescription = null,
                     tint = iconsColor,
                     modifier = Modifier
-                        .offset { IntOffset(0, colorPosY.toInt() - 5) }
+                        .offset { IntOffset(0, colorPosY.toInt() - 5.dp.roundToPx()) }
                         .size(10.dp)
                 )
 
@@ -182,27 +190,44 @@ fun ColorPicker(
                 contentDescription = null,
                 tint = iconsColor,
                 modifier = Modifier
-                    .offset { IntOffset(alphaPosX.toInt() - 5, 0) }
+                    .offset { IntOffset(alphaPosX.toInt() - 5.dp.roundToPx(), 0) }
                     .size(10.dp)
             )
 
             Box(Modifier.size(correctShadeBoxSize.dp, correctColorRectWidth.dp)) {
 
-                Image(painterResource("chess_texture_gray.jpg"), null, contentScale = ContentScale.Crop)
+                Image(
+                    painter = painterResource("chess_texture_gray.jpg"),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.Crop
+                )
 
                 Box(
                     Modifier
                         .size(correctShadeBoxSize.dp, correctColorRectWidth.dp)
                         .background(brush = Brush.horizontalGradient( listOf(Color.Transparent, colorShade) ) )
-                        .onPointerEvent(PointerEventType.Press) {
-                            val position = it.changes.first().position
-                            alphaPosX = position.x
-                            resultColor = colorShade.copy(alpha = getAlpha(position, correctShadeBoxSize))
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    val position = it
+                                    alphaPosX = position.x
+                                    resultColor = colorShade.copy(alpha = getAlpha(
+                                        position,
+                                        shadeBoxSizeWithDensity.toInt()
+                                    )
+                                    )
+                                }
+                            )
                         }
                         .pointerInput(Unit) {
                             detectDragGestures { change, _ ->
-                                alphaPosX = (change.position.x).coerceIn(0f..correctShadeBoxSize.toFloat())
-                                resultColor = colorShade.copy(alpha = getAlpha(change.position, correctShadeBoxSize))
+                                alphaPosX = (change.position.x).coerceIn(0f..shadeBoxSizeWithDensity)
+                                resultColor = colorShade.copy(alpha = getAlpha(
+                                    change.position,
+                                    shadeBoxSizeWithDensity.toInt()
+                                )
+                                )
                             }
                         }
 
@@ -341,10 +366,10 @@ private fun getShadeBoxBackground(color: Color): Color {
 // Calculate cursor offset from 0.0 position to it center
 
 /** Get center [Offset] of shade selector circle */
-private fun getCenter(size: Int): Offset {
+private fun getCenter(size: Int, density: Float): Offset {
     return Offset(
-        x = size.toFloat() / 2,
-        y = size.toFloat() / 2
+        x = (size.toFloat() * density) / 2,
+        y = (size.toFloat() * density) / 2
     )
 }
 
